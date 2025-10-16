@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🤗%3C/text%3E%3C/svg%3E" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Hug Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+</head>
+<body class="bg-rose-50 font-sans text-gray-800">
+
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-4xl mx-auto">
+            <header class="text-center mb-8">
+                <h1 class="text-4xl sm:text-5xl font-bold text-rose-800 tracking-tight">AI Hug Generator</h1>
+                <p class="mt-3 text-lg text-rose-600 max-w-2xl mx-auto">Upload two photos, and watch AI create a heartwarming hug!</p>
+            </header>
+
+            <main class="bg-white rounded-2xl shadow-xl p-6 sm:p-10">
+                <div class="flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 mb-8">
+                    <!-- Image Uploader 1 -->
+                    <div class="w-full max-w-xs h-80 flex flex-col items-center justify-center bg-white rounded-xl shadow-md p-4 transition-all duration-300">
+                        <label for="file1" class="w-full h-full flex flex-col items-center justify-center cursor-pointer relative group">
+                             <div id="placeholder1" class="text-center p-4 border-2 border-dashed border-rose-200 rounded-lg w-full h-full flex flex-col justify-center items-center hover:bg-rose-50 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p class="mt-2 text-sm text-rose-600">Person 1</p>
+                                <p class="text-xs text-rose-400">Click to upload</p>
+                            </div>
+                            <div id="preview1" class="hidden w-full h-full relative"></div>
+                            <input id="file1" type="file" accept="image/*" class="hidden" />
+                        </label>
+                    </div>
+
+                    <div class="text-4xl text-rose-400 font-light my-4 md:my-0">+</div>
+
+                    <!-- Image Uploader 2 -->
+                    <div class="w-full max-w-xs h-80 flex flex-col items-center justify-center bg-white rounded-xl shadow-md p-4 transition-all duration-300">
+                         <label for="file2" class="w-full h-full flex flex-col items-center justify-center cursor-pointer relative group">
+                            <div id="placeholder2" class="text-center p-4 border-2 border-dashed border-rose-200 rounded-lg w-full h-full flex flex-col justify-center items-center hover:bg-rose-50 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p class="mt-2 text-sm text-rose-600">Person 2</p>
+                                <p class="text-xs text-rose-400">Click to upload</p>
+                            </div>
+                             <div id="preview2" class="hidden w-full h-full relative"></div>
+                            <input id="file2" type="file" accept="image/*" class="hidden" />
+                        </label>
+                    </div>
+                </div>
+
+                <div class="text-center mb-8">
+                    <button id="generate-btn" disabled class="px-8 py-4 text-lg font-semibold rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 bg-gray-300 text-gray-500 cursor-not-allowed">
+                        Generate Hug
+                    </button>
+                </div>
+                
+                <div id="error-container" class="text-center text-red-500 bg-red-100 p-3 rounded-lg hidden" role="alert"></div>
+
+                <div id="result-container" class="mt-6 min-h-[300px] md:min-h-[400px] bg-rose-50 rounded-xl flex items-center justify-center p-4 border-2 border-dashed border-rose-200">
+                    <!-- Spinner (hidden by default) -->
+                    <div id="spinner-container" class="text-center hidden">
+                        <svg class="animate-spin h-10 w-10 text-rose-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="mt-4 text-rose-600 animate-pulse">Our AI is working its magic...</p>
+                    </div>
+                    <!-- Generated Image (hidden by default) -->
+                    <div id="generated-image-container" class="w-full max-w-lg hidden"></div>
+                    <!-- Placeholder -->
+                    <p id="result-placeholder" class="text-rose-500 text-center">Your generated image will appear here.</p>
+                </div>
+            </main>
+
+            <footer class="text-center mt-8 text-rose-500">
+                <p>Powered by Gemini AI</p>
+            </footer>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenAI, Modality } from "@google/genai";
+
+        // --- STATE ---
+        let image1 = null;
+        let image2 = null;
+        let isLoading = false;
+
+        // --- DOM ELEMENTS ---
+        const fileInput1 = document.getElementById('file1');
+        const fileInput2 = document.getElementById('file2');
+        const placeholder1 = document.getElementById('placeholder1');
+        const placeholder2 = document.getElementById('placeholder2');
+        const preview1 = document.getElementById('preview1');
+        const preview2 = document.getElementById('preview2');
+        const generateBtn = document.getElementById('generate-btn');
+        const errorContainer = document.getElementById('error-container');
+        const resultContainer = document.getElementById('result-container');
+        const spinnerContainer = document.getElementById('spinner-container');
+        const generatedImageContainer = document.getElementById('generated-image-container');
+        const resultPlaceholder = document.getElementById('result-placeholder');
+
+        // --- HELPER FUNCTIONS ---
+        const fileToBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const result = reader.result;
+                    resolve(result.split(',')[1]);
+                };
+                reader.onerror = (error) => reject(error);
+            });
+        };
+
+        const updateGenerateButtonState = () => {
+            if (image1 && image2 && !isLoading) {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                generateBtn.classList.add('bg-rose-500', 'hover:bg-rose-600', 'text-white', 'shadow-lg');
+            } else {
+                generateBtn.disabled = true;
+                generateBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                generateBtn.classList.remove('bg-rose-500', 'hover:bg-rose-600', 'text-white', 'shadow-lg');
+            }
+        };
+
+        const handleFileChange = (event, imageNumber) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            let targetState = imageNumber === 1 ? image1 : image2;
+            const targetPreview = imageNumber === 1 ? preview1 : preview2;
+            const targetPlaceholder = imageNumber === 1 ? placeholder1 : placeholder2;
+
+            if (targetState && targetState.previewUrl) {
+                URL.revokeObjectURL(targetState.previewUrl);
+            }
+
+            const previewUrl = URL.createObjectURL(file);
+            const newImageState = { file, previewUrl };
+
+            if (imageNumber === 1) {
+                image1 = newImageState;
+            } else {
+                image2 = newImageState;
+            }
+
+            targetPreview.innerHTML = `
+                <img src="${previewUrl}" alt="Preview" class="w-full h-full object-cover rounded-lg" />
+                <button data-image-number="${imageNumber}" class="remove-btn absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-1.5 hover:bg-opacity-75 transition-opacity opacity-0 group-hover:opacity-100" aria-label="Remove image">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            `;
+            targetPreview.classList.remove('hidden');
+            targetPlaceholder.classList.add('hidden');
+            
+            updateGenerateButtonState();
+        };
+
+        const handleRemoveImage = (imageNumber) => {
+            let targetState = imageNumber === 1 ? image1 : image2;
+            const targetPreview = imageNumber === 1 ? preview1 : preview2;
+            const targetPlaceholder = imageNumber === 1 ? placeholder1 : placeholder2;
+            const targetInput = imageNumber === 1 ? fileInput1 : fileInput2;
+
+            if (targetState && targetState.previewUrl) {
+                URL.revokeObjectURL(targetState.previewUrl);
+            }
+
+            if (imageNumber === 1) {
+                image1 = null;
+            } else {
+                image2 = null;
+            }
+
+            targetPreview.innerHTML = '';
+            targetPreview.classList.add('hidden');
+            targetPlaceholder.classList.remove('hidden');
+            targetInput.value = '';
+
+            updateGenerateButtonState();
+        }
+
+        const handleGenerateHug = async () => {
+            if (!image1 || !image2) {
+                errorContainer.textContent = "Please upload two images to generate a hug.";
+                errorContainer.classList.remove('hidden');
+                return;
+            }
+            
+            isLoading = true;
+            updateGenerateButtonState();
+            generateBtn.textContent = 'Creating Hug...';
+            errorContainer.classList.add('hidden');
+            resultPlaceholder.classList.add('hidden');
+            generatedImageContainer.classList.add('hidden');
+            spinnerContainer.classList.remove('hidden');
+            
+            try {
+                if (!process.env.API_KEY) {
+                    throw new Error("API_KEY environment variable is not set.");
+                }
+                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+                const base64Image1 = await fileToBase64(image1.file);
+                const base64Image2 = await fileToBase64(image2.file);
+
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash-image',
+                    contents: {
+                        parts: [
+                            { inlineData: { data: base64Image1, mimeType: image1.file.type } },
+                            { inlineData: { data: base64Image2, mimeType: image2.file.type } },
+                            { text: "Analyze the two images provided. Create a new, single, photorealistic image where the main subjects from each photo are hugging each other. Preserve their identities, features, and clothing as accurately as possible. The final image should have a warm, affectionate, and natural atmosphere." },
+                        ],
+                    },
+                    config: {
+                        responseModalities: [Modality.IMAGE],
+                    },
+                });
+
+                let generatedImageFound = false;
+                for (const part of response.candidates[0].content.parts) {
+                    if (part.inlineData) {
+                        const base64ImageBytes = part.inlineData.data;
+                        const imageUrl = `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
+                        generatedImageContainer.innerHTML = `
+                            <h3 class="text-2xl font-semibold text-rose-800 text-center mb-4">Here's your hug!</h3>
+                            <img src="${imageUrl}" alt="AI generated hug" class="rounded-lg shadow-2xl w-full object-contain" />
+                        `;
+                        generatedImageContainer.classList.remove('hidden');
+                        generatedImageFound = true;
+                        break;
+                    }
+                }
+                if (!generatedImageFound) {
+                     throw new Error("No image was generated by the API.");
+                }
+
+            } catch (err) {
+                console.error("Error calling Gemini API:", err);
+                errorContainer.textContent = "Sorry, we couldn't create the hug image. Please try again with different photos.";
+                errorContainer.classList.remove('hidden');
+                resultPlaceholder.classList.remove('hidden');
+            } finally {
+                isLoading = false;
+                updateGenerateButtonState();
+                generateBtn.textContent = 'Generate Hug';
+                spinnerContainer.classList.add('hidden');
+            }
+        };
+
+
+        // --- EVENT LISTENERS ---
+        fileInput1.addEventListener('change', (e) => handleFileChange(e, 1));
+        fileInput2.addEventListener('change', (e) => handleFileChange(e, 2));
+
+        document.body.addEventListener('click', (e) => {
+            // Use .closest to handle clicks on the SVG inside the button
+            const removeButton = e.target.closest('.remove-btn');
+            if (removeButton) {
+                e.preventDefault();
+                const imageNumber = parseInt(removeButton.getAttribute('data-image-number'), 10);
+                handleRemoveImage(imageNumber);
+            }
+        });
+
+        generateBtn.addEventListener('click', handleGenerateHug);
+
+    </script>
+</body>
+</html>
